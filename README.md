@@ -17,10 +17,10 @@ This repository contains a fully functional mail microservice built with **NestJ
 
 ## Requirements
 
-- **Node.js**: v16+
-- **MongoDB**: v4.4+ (configured as a replica set)
-- **NATS**: v2.0+
-- **Docker**: Optional, for containerized deployment
+- **Node.js**
+- **MongoDB**
+- **NATS**
+- **Docker** (optional, for containerized deployment)
 
 ---
 
