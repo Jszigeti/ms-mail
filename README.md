@@ -1,99 +1,245 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Mail Microservice (ms-mail)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This repository contains a fully functional mail microservice built with **NestJS**, **MongoDB**, and **NATS** for message-based communication. The service is designed to send emails using customizable templates and log the status of each email for monitoring and debugging.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Email Sending**: Send emails with configurable templates and dynamic variables.
+- **Template Management**: Store and retrieve email templates for consistent messaging.
+- **Message Broker Integration**: Connects to any NATS-compatible system for seamless communication.
+- **Logging**: Tracks the status of emails (e.g., `PENDING`, `SENT`, `FAILED`) for monitoring purposes.
+- **Authentication & Security**: Secure inter-node communication using MongoDB replica sets with `keyFile` authentication.
+- **Extensibility**: Easily integrate into existing systems via NATS messaging.
 
-## Project setup
+---
 
-```bash
-$ pnpm install
-```
+## Requirements
 
-## Compile and run the project
+- **Node.js**: v16+
+- **MongoDB**: v4.4+ (configured as a replica set)
+- **NATS**: v2.0+
+- **Docker**: Optional, for containerized deployment
+
+---
+
+## Installation
+
+### Clone the Repository
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+git clone https://github.com/Jszigeti/ms-mail.git
+cd ms-mail
 ```
 
-## Run tests
+### Install Dependencies
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+npm install
 ```
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+DATABASE_URL=mongodb://<username>:<password>@<host>:27017/<database>
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USER=your-email@example.com
+MAIL_PASS=your-email-password
+NATS_URL=nats://<host>:4222
+```
+
+---
+
+## Usage
+
+### Starting the Microservice
+
+To start the service in development mode:
+
+```bash
+npm run start:dev
+```
+
+For production:
+
+```bash
+npm run start:prod
+```
+
+### NATS Communication
+
+This microservice listens for messages on the `SEND_MAIL` subject. To send an email, publish a message with the following structure:
+
+```json
+{
+  "userId": "123456",
+  "templateId": "example",
+  "variables": {
+    "to": "john.doe@example.com",
+    "subject": "Welcome to Our Service",
+    "name": "John Doe"
+  }
+}
+```
+
+#### Example with NATS CLI:
+
+```bash
+nats pub SEND_MAIL '{
+  "userId": "123456",
+  "templateId": "example",
+  "variables": {
+    "to": "john.doe@example.com",
+    "subject": "Welcome to Our Service",
+    "name": "John Doe"
+  }
+}'
+```
+
+---
+
+## Email Templates
+
+### Directory Structure
+
+Templates are stored in the `templates/` directory and must be in `.html` format.
+
+#### Example Template (`example.html`):
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Welcome</title>
+  </head>
+  <body>
+    <h1>Welcome, {{name}}!</h1>
+    <p>We are excited to have you join our service.</p>
+  </body>
+</html>
+```
+
+### Variable Replacement
+
+The `variables` object in the NATS message replaces placeholders in the template using the `{{key}}` syntax.
+
+---
+
+## Logs
+
+### MongoDB Email Logs
+
+Each email sent is logged in the MongoDB `emailLog` collection with the following structure:
+
+```json
+{
+  "_id": "<log_id>",
+  "templateId": "example",
+  "userId": "123456",
+  "status": "SENT",
+  "createdAt": "2025-01-15T12:00:00.000Z",
+  "updatedAt": "2025-01-15T12:00:10.000Z"
+}
+```
+
+### Statuses
+
+- **PENDING**: Email is being processed.
+- **SENT**: Email was successfully sent.
+- **FAILED**: Email could not be sent.
+
+---
+
+## Development
+
+### Codebase Structure
+
+```plaintext
+prisma/                     # Prisma schema and client
+src/
+├── mail/                   # Mail service module
+│   ├── mail.controller.ts  # Handles NATS messages
+│   ├── mail.service.ts     # Business logic for sending emails
+│   └── templates/          # Email templates
+├── prisma/                 # Prisma service module
+│   └── prisma.service.ts   # Prisma service
+├── app.module.ts           # Root module
+├── main.ts                 # Application entry point
+└── templates               # Templates folder
+```
+
+### Running in Development
+
+```bash
+npm run start:dev
+```
+
+---
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Docker Deployment
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+#### Build and Run the Docker Image
 
-```bash
-$ pnpm install -g mau
-$ mau deploy
-```
+1. Build the Docker image:
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+   ```bash
+   docker build -t ms-mail .
+   ```
 
-## Resources
+2. Run the container:
+   ```bash
+   docker run -d \
+     -p 3000:3000 \
+     --name ms-mail \
+     --env-file .env \
+     ms-mail
+   ```
 
-Check out a few resources that may come in handy when working with NestJS:
+### Kubernetes Deployment
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Create a `Deployment` and `Service` manifest for your Kubernetes cluster to deploy the service.
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Troubleshooting
 
-## Stay in touch
+### Common Issues
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+1. **Replica Set Not Initialized**:
+   Ensure MongoDB is running with `--replSet rs0` and initialized using:
+
+   ```javascript
+   rs.initiate();
+   ```
+
+2. **Email Not Sent**:
+   Check the logs in MongoDB and confirm your SMTP credentials are correct.
+
+3. **NATS Connection Error**:
+   Ensure your NATS server is running and accessible at the `NATS_URL` provided in the `.env` file.
+
+---
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is **UNLICENSED** and provided as an example. Feel free to adapt it to your needs.
+
+---
+
+## Contact
+
+- Author: Jonas Szigeti
+- GitHub: [https://github.com/Jszigeti](https://github.com/Jszigeti)
+- Issues: [Open an issue](https://github.com/Jszigeti/react-message/issues)
