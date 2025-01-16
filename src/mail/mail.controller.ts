@@ -8,7 +8,7 @@ export class MailController {
   constructor(private readonly mailService: MailService) {}
 
   @MessagePattern('SEND_MAIL')
-  async handleSendMail(data: SendMailDto): Promise<void> {
-    await this.mailService.sendMail(data);
+  async handleSend(data: SendMailDto): Promise<void> {
+    await this.mailService.send(data);
   }
 }
