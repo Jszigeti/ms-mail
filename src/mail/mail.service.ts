@@ -10,11 +10,22 @@ import { SendMailDto } from './dto/send-mail.dto';
 
 @Injectable()
 export class MailService {
+  private transporter: nodemailer.Transporter;
+
   constructor(
     private readonly configService: ConfigService,
     private readonly prismaService: PrismaService,
-    private transporter = this.createTransporter(),
-  ) {}
+  ) {
+    // Create nodemailer transporter
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get('MAIL_HOST'),
+      port: this.configService.get<number>('MAIL_PORT'),
+      auth: {
+        user: this.configService.get('MAIL_USER'),
+        pass: this.configService.get('MAIL_PASS'),
+      },
+    });
+  }
 
   async send(data: SendMailDto): Promise<ISendMailResponse> {
     // Destructuring data
@@ -57,17 +68,6 @@ export class MailService {
         data: { status: LogStatus.FAILED },
       });
     }
-  }
-
-  private createTransporter(): nodemailer.Transporter {
-    return nodemailer.createTransport({
-      host: this.configService.get<string>('MAIL_HOST'),
-      port: this.configService.get<number>('MAIL_PORT'),
-      auth: {
-        user: this.configService.get<string>('MAIL_USER'),
-        pass: this.configService.get<string>('MAIL_PASS'),
-      },
-    });
   }
 
   private getTemplateContent(templateId: string): string {
